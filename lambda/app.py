@@ -102,7 +102,7 @@ def lambda_handler(event, context):
         arr = np.array(image)
 
         # Prepare payload for SageMaker
-        payload = json.dumps({"input_layer": arr.tolist()})
+        payload = json.dumps({"keras_tensor": arr.tolist()});
 
         # Invoke SageMaker endpoint
         runtime = boto3.client("sagemaker-runtime")
@@ -120,6 +120,34 @@ def lambda_handler(event, context):
         confidence = float(predictions[class_index])
 
         label = label_map[class_index]
+
+        # Save image and result to S3
+        session_id = context.aws_request_id
+        bucket_name = "your-s3-bucket-name"  # Replace with your actual bucket name
+        s3 = boto3.client("s3")
+
+        # Save image as PNG
+        img_buffer = io.BytesIO()
+        image.save(img_buffer, format="PNG")
+        img_buffer.seek(0)
+        s3.put_object(
+            Bucket=bucket_name,
+            Key=f"{session_id}.png",
+            Body=img_buffer,
+            ContentType="image/png"
+        )
+
+        # Save result as JSON
+        result_obj = {
+            "label": label,
+            "confidence": confidence
+        }
+        s3.put_object(
+            Bucket=bucket_name,
+            Key=f"{session_id}.json",
+            Body=json.dumps(result_obj),
+            ContentType="application/json"
+        )
 
         return {
             "statusCode": 200,
