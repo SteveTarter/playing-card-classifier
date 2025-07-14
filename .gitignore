@@ -1,0 +1,67 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.pyc
+*.pyd
+*.pyo
+*.egg-info/
+.Python
+build/
+develop-eggs/
+dist/
+eggs/
+
+# Environments
+.env/
+venv/
+env/
+*.venv
+
+# Editors
+.vscode/        # VS Code
+.idea/          # PyCharm/IntelliJ IDEA
+*.sublime-project # Sublime Text
+*.sublime-workspace
+.DS_Store       # macOS specific
+Thumbs.db       # Windows specific
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+*.ipynb-filter
+.ipynb_checkpoints/
+
+# Test / Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Logs and databases
+*.log
+*.sqlite3
+db.sqlite3
+
+# pip-related
+pip-log.txt
+pip-delete-this-arg.txt
+
+# Installer
+*.egg
+*.whl
+
+# C extensions
+*.so
+
+# MyPy
+.mypy_cache/
+
+# PyInstaller
+*.spec
+dist/
+build/
+
+# Docker
+.dockerignore
+
+# Temporary files
+*~
+*.bak
+*.swp
