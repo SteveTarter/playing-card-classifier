@@ -10,11 +10,15 @@ The relevant files should be organized as follows:
 
 ```
 model/
-├── 1/
+├── export/
+├── saved_model/
 │   ├── saved_model.pb
-│   └── variables/
-│       ├── variables.data-00000-of-00001
-│       └── variables.index
+│   └── 1/
+│       ├── fingerprint.pb
+│       ├── saved_model.pb
+│       └── variables/
+│           ├── variables.data-00000-of-00001
+│           └── variables.index
 └── model.tar.gz        # Generated archive to upload to S3
 ```
 
@@ -31,11 +35,7 @@ model/
 
 ## Step 1: Export the Model
 
-If not already done, save your model in the TensorFlow `SavedModel` format:
-
-```python
-model.save("model/1")
-```
+The soon-to-be-included Jupyter notebook includes code to build and evaluate the TensorFlow model, as well as export it to this directory.  A model built using this notebook is in this repo.
 
 ---
 
@@ -44,8 +44,8 @@ model.save("model/1")
 Create a `.tar.gz` archive of the `model/` directory:
 
 ```bash
-cd model
-tar -czf model.tar.gz 1/
+cd model/export
+tar -cvzf model.tar.gz 1/
 ```
 
 > **Important:** The archive **must** contain the version directory (`1/`) directly inside. SageMaker expects the versioned structure.
@@ -57,8 +57,8 @@ tar -czf model.tar.gz 1/
 Create an S3 bucket if needed, then upload:
 
 ```bash
-aws s3 mb s3://your-bucket-name
-aws s3 cp model.tar.gz s3://your-bucket-name/model.tar.gz
+aws s3 mb s3://your-s3-bucket-name
+aws s3 cp model.tar.gz s3://your-s3-bucket-name/model.tar.gz
 ```
 
 ---
@@ -104,23 +104,43 @@ aws sagemaker describe-endpoint --endpoint-name playing-card-classification-endp
 Example Python test:
 
 ```python
-import boto3
-import json
-from PIL import Image
 import numpy as np
+import base64
+import io
 
-img = Image.open("2Diamonds.jpg").convert("RGB")
-arr = np.array(img)
+# Load the image
+image_path = "2Diamonds.jpg" # Make sure this image file is in the same directory
+img = Image.open(image_path).convert("RGB")
 
-payload = json.dumps({"input_layer": arr.tolist()})
+# Resize the image to 224x224. Why waste network bandwidth when the model expects this res.
+img = img.resize((224, 224))
+
+# Convert image to bytes and then to base64
+img_byte_arr = io.BytesIO()
+img.save(img_byte_arr, format='PNG')
+encoded_image = base64.b64encode(img_byte_arr.getvalue()).decode('utf-8')
+
+# Prepare the payload for the Lambda function
+# The Lambda function expects a JSON with a key "image_base64"
+payload = json.dumps({"image_base64": encoded_image})
+
+# Create a SageMaker runtime client
 client = boto3.client("sagemaker-runtime")
+
+# Invoke the SageMaker endpoint.
+
+# To directly test the SageMaker model as the Lambda *invokes* it:
+# The Lambda converts the image to a NumPy array and sends it as "keras_tensor"
+arr = np.array(img)
+model_payload = json.dumps({"keras_tensor": arr.tolist()})
 
 response = client.invoke_endpoint(
     EndpointName="playing-card-classification-endpoint",
     ContentType="application/json",
-    Body=payload,
+    Body=model_payload, # This payload directly mimics what the Lambda sends to SageMaker
 )
 
+# The results from the model is a vector of probabilities for each card.
 print(json.loads(response["Body"].read()))
 ```
 
@@ -138,5 +158,5 @@ aws sagemaker delete-model --model-name playing-card-classification-model
 
 ## Notes
 
-- If your model performs its own resizing and normalization, send raw 224x224x3 RGB data.
+- If your model performs its own resizing and normalization, send base64-encoded 224x224x3 RGB data.
 - The container image shown uses TensorFlow 2.13 (CPU). Adjust if you're using a different version or GPU.

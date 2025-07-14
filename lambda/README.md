@@ -7,6 +7,7 @@ This Lambda function acts as an inference relay between a frontend API Gateway a
 ```
 lambda/
 ├── app.py               # Main Lambda function handler
+├── bucket-policy.json   # Python dependencies
 ├── requirements.txt     # Python dependencies
 └── README.md            # This file
 ```
@@ -59,11 +60,11 @@ Lambda expects the client to POST a JSON payload:
 
 ```json
 {
-  "image": [[... pixel array ...]]
+  "image_base64": [[... base64-encoded pixel array ...]]
 }
 ```
 
-The `image` field should be a raw 224x224 RGB pixel array, unnormalized.
+The `image_base64` field should be a base64-encoded 224x224 RGB pixel array, unnormalized.
 
 ## Sample Output
 
@@ -85,7 +86,7 @@ Ensure your API Gateway:
 ```
 Access-Control-Allow-Origin: *
 Access-Control-Allow-Methods: POST,OPTIONS
-Access-Control-Allow-Headers: Content-Type
+Access-Control-Allow-Headers: Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token
 ```
 
 You must also return these headers from Lambda responses.
