@@ -11,15 +11,15 @@ The relevant files should be organized as follows:
 ```
 model/
 ├── export/
-├── saved_model/
-│   ├── saved_model.pb
-│   └── 1/
-│       ├── fingerprint.pb
+│   └── saved_model/
 │       ├── saved_model.pb
-│       └── variables/
-│           ├── variables.data-00000-of-00001
-│           └── variables.index
-└── model.tar.gz        # Generated archive to upload to S3
+│       └── 1/
+│           ├── fingerprint.pb
+│           ├── saved_model.pb
+│           └── variables/
+│               ├── variables.data-00000-of-00001
+│               └── variables.index
+└── Playing Card Classifier ML Model.ipynb   # Jupyter Notebook
 ```
 
 ---
@@ -33,9 +33,9 @@ model/
 
 ---
 
-## Step 1: Export the Model
+## Step 1: Modify, Generate, Export the ML Model
 
-The soon-to-be-included Jupyter notebook includes code to build and evaluate the TensorFlow model, as well as export it to this directory.  A model built using this notebook is in this repo.
+The Jupyter Notebook includes the code to build and evaluate the TensorFlow model, as well as export it to this directory.  A model built using this notebook is in use on the production website (or was as of this writing).
 
 ---
 
