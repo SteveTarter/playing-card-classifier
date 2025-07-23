@@ -4,6 +4,7 @@ import base64
 import numpy as np
 from PIL import Image
 import io
+import os
 
 # Define label mapping (example: index to card name)
 label_map = [
@@ -122,17 +123,28 @@ def lambda_handler(event, context):
         label = label_map[class_index]
 
         # Save image and result to S3
-        session_id = context.aws_request_id
-        bucket_name = "your-s3-bucket-name"  # Replace with your actual bucket name
         s3 = boto3.client("s3")
+        session_id = context.aws_request_id
+        bucket_name = os.environ.get("BUCKET_NAME")
+        if not bucket_name:
+            raise ValueError("BUCKET_NAME environment variable not set")
+        
+        # Get the target prefix for S3 objects, default to "raw_data/"
+        s3_target_prefix = os.environ.get("S3_TARGET_PREFIX", "raw_data/")
+        # Ensure the prefix ends with a slash if it's not empty, for consistent S3 pathing
+        if s3_target_prefix and not s3_target_prefix.endswith('/'):
+            s3_target_prefix += '/'
 
+        # Construct the base folder for this request ID
+        request_folder = f"{s3_target_prefix}aws_request_id_{session_id}/"
+        
         # Save image as PNG
         img_buffer = io.BytesIO()
         image.save(img_buffer, format="PNG")
         img_buffer.seek(0)
         s3.put_object(
             Bucket=bucket_name,
-            Key=f"{session_id}.png",
+            Key=f"{request_folder}image.png", # Updated Key
             Body=img_buffer,
             ContentType="image/png"
         )
@@ -144,7 +156,7 @@ def lambda_handler(event, context):
         }
         s3.put_object(
             Bucket=bucket_name,
-            Key=f"{session_id}.json",
+            Key=f"{request_folder}results.json", # Updated Key
             Body=json.dumps(result_obj),
             ContentType="application/json"
         )
