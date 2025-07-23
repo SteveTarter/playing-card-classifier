@@ -16,15 +16,7 @@ If additional Python packages are needed, you can create a `lambda_package/` dir
 
 ## Deployment Instructions
 
-### 1. Set Environment Variables
-
-In the AWS Lambda Console, define the following environment variable:
-
-| Key                     | Description                                 |
-|------------------------|---------------------------------------------|
-| `SAGEMAKER_ENDPOINT_NAME` | The name of the deployed SageMaker endpoint |
-
-### 2. Install Python Dependencies
+### 1. Install Python Dependencies
 
 From within the `lambda/` directory, run:
 
@@ -35,7 +27,7 @@ pip install -r requirements.txt -t lambda_package/
 
 This installs required packages (e.g., `boto3`, `numpy`, `Pillow`) into a staging directory.
 
-### 3. Create Deployment Package
+### 2. Create Deployment Package
 
 ```bash
 cd lambda_package
@@ -46,13 +38,22 @@ zip -g lambda-deploy.zip app.py
 
 You now have a ready-to-upload `lambda-deploy.zip`.
 
-### 4. Upload to Lambda
+### 3. Upload to Lambda
 
 Upload the `lambda-deploy.zip` in the AWS Console or run:
 
 ```bash
 aws lambda update-function-code   --function-name your-lambda-function-name   --zip-file fileb://lambda-deploy.zip
 ```
+
+### 4. Set Environment Variables
+
+In the AWS Lambda Console, define the following two environment variable:
+
+| Key                     | Description                                 |
+|------------------------|---------------------------------------------|
+| `BUCKET_NAME` | The bucket to store card images and results.  These data will be used for retraining the model. |
+| `S3_TARGET_PREFIX` | (Optional) The folder to be used within the bucket to store the data.  Defaults to "/raw_data/" |
 
 ## Expected Input Format
 
@@ -81,15 +82,14 @@ Ensure your API Gateway:
 
 - Is configured as a REST API (not HTTP)
 - Has `POST` and `OPTIONS` methods
-- Has CORS enabled with the following headers:
-
-```
-Access-Control-Allow-Origin: *
-Access-Control-Allow-Methods: POST,OPTIONS
-Access-Control-Allow-Headers: Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token
-```
-
-You must also return these headers from Lambda responses.
+- For both POST and OPTIONS methods, do the following:
+    - Set up both methods to use an integration type of "Lambda Function"
+    - Check "Lambda Proxy Integration"
+    - Set the Lambda  Function to the card classifier lambda function.
+    - In the Method Response, ensure that the following headers are added: 
+        - Access-Control-Allow-Headers
+        - Access-Control-Allow-Methods
+        - Access-Control-Allow-Origin
 
 ## Dependencies
 
