@@ -82,15 +82,14 @@ Ensure your API Gateway:
 
 - Is configured as a REST API (not HTTP)
 - Has `POST` and `OPTIONS` methods
-- Has CORS enabled with the following headers:
-
-```
-Access-Control-Allow-Origin: *
-Access-Control-Allow-Methods: POST,OPTIONS
-Access-Control-Allow-Headers: Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token
-```
-
-You must also return these headers from Lambda responses.
+- For both POST and OPTIONS methods, do the following:
+    - Set up both methods to use an integration type of "Lambda Function"
+    - Check "Lambda Proxy Integration"
+    - Set the Lambda  Function to the card classifier lambda function.
+    - In the Method Response, ensure that the following headers are added: 
+        - Access-Control-Allow-Headers
+        - Access-Control-Allow-Methods
+        - Access-Control-Allow-Origin
 
 ## Dependencies
 

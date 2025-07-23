@@ -6,6 +6,12 @@ from PIL import Image
 import io
 import os
 
+# Whitelisted CORS origins
+ALLOWED_ORIGINS = [
+    "https://card-classifier.tarterware.com",
+    "http://card-classifier.tarterware.info:3000"
+]
+
 # Define label mapping (example: index to card name)
 label_map = [
  'ace of clubs',
@@ -66,15 +72,27 @@ label_map = [
 model = None
 
 def lambda_handler(event, context):
+    # Grab the Origin header (case‑insensitive)
+    headers = event.get("headers") or {}
+    origin = headers.get("Origin") or headers.get("origin", "")
+    
+    # Decide which origin to return
+    acao = origin if origin in ALLOWED_ORIGINS else ALLOWED_ORIGINS[0]
+
+    # Common CORS headers
+    cors_headers = {
+        "Access-Control-Allow-Origin": acao,
+        "Access-Control-Allow-Headers": "Content-Type,Authorization",
+        "Access-Control-Allow-Methods": "OPTIONS,POST,GET"
+    }
+
     try:
         if event["httpMethod"] == "OPTIONS":
             return {
                 "statusCode": 200,
                 'headers': {
-                    'Content-Type': 'application/json',
-                    'Access-Control-Allow-Origin': '*',
-                    'Access-Control-Allow-Headers': 'Content-Type,Authorization',
-                    'Access-Control-Allow-Methods': 'OPTIONS,POST,GET'
+                    **cors_headers,
+                    'Content-Type': 'application/json'
                 },
                 "body": json.dumps({"message": "CORS preflight OK"})
             }
@@ -85,6 +103,7 @@ def lambda_handler(event, context):
         if image_data is None:
             return {
                 "statusCode": 400,
+                "headers": cors_headers,
                 "body": json.dumps({"error": "Missing 'image_base64' in request."})
             }
 
@@ -164,10 +183,8 @@ def lambda_handler(event, context):
         return {
             "statusCode": 200,
             'headers': {
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Headers': 'Content-Type,Authorization',
-                'Access-Control-Allow-Methods': 'OPTIONS,POST,GET'
+                **cors_headers,
+                'Content-Type': 'application/json'
             },
             "body": json.dumps({
                 "label": label,
@@ -179,10 +196,8 @@ def lambda_handler(event, context):
         return {
             "statusCode": 500,
             "headers": {
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Headers': 'Content-Type,Authorization',
-                'Access-Control-Allow-Methods': 'OPTIONS,POST,GET'
+                **cors_headers,
+                'Content-Type': 'application/json'
             },
             "body": json.dumps({"error": str(e)})
         }
