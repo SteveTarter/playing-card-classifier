@@ -15,17 +15,9 @@ The project is organized into the following key directories:
 * **`docs/`**: Top-level system architecture diagrams.
 * **`tests/`**: Model verification and testing notebooks.
 
----
-
 ## System Architecture
 
-```mermaid
-graph TD
-    Client[React Frontend (S3 + CloudFront)] -->|1. POST Image Base64| APIGateway[API Gateway]
-    APIGateway -->|2. Event Proxy| Lambda[AWS Lambda Function]
-    Lambda -->|3. Invoke Inference| SageMaker[SageMaker Serverless Endpoint]
-    Lambda -->|4. Log Prediction & Image| S3Backend[Backend S3 Bucket]
-```
+![System Architecture](./docs/architecture_serverless.png)
 
 1. **Frontend**: Host static React files in a private S3 bucket, served via a global CloudFront CDN distribution secured with HTTPS and configured for SPA routing.
 2. **API Endpoint**: Exposed via Amazon API Gateway, proxying POST/OPTIONS requests directly to AWS Lambda.
