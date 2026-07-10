@@ -125,9 +125,10 @@ def lambda_handler(event, context):
         payload = json.dumps({"keras_tensor": arr.tolist()});
 
         # Invoke SageMaker endpoint
+        endpoint_name = os.environ.get("SAGEMAKER_ENDPOINT_NAME", "playing-card-classification-endpoint")
         runtime = boto3.client("sagemaker-runtime")
         response = runtime.invoke_endpoint(
-            EndpointName="playing-card-classification-endpoint",
+            EndpointName=endpoint_name,
             ContentType="application/json",
             Body=payload
         )
