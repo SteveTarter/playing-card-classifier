@@ -67,7 +67,7 @@ variable "serverless_max_concurrency" {
 variable "sagemaker_ecr_image_uri" {
   type        = string
   description = "The ECR container image URI for TensorFlow inference. Defaults to AWS Deep Learning Containers (DLC) in us-east-1."
-  default     = "763104351884.dkr.ecr.us-east-1.amazonaws.com/sagemaker-tensorflow-serving:2.13-cpu-py39-ubuntu20.04"
+  default     = "763104351884.dkr.ecr.us-east-1.amazonaws.com/tensorflow-inference:2.13.0-cpu-py310"
 }
 
 variable "s3_target_prefix" {
