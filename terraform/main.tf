@@ -1,6 +1,13 @@
 locals {
   use_custom_domain = var.custom_domain != "" && var.acm_certificate_arn != ""
   aliases           = local.use_custom_domain ? [var.custom_domain] : []
+
+  # Derive name prefix from the custom domain subdomain (e.g., "test-card-classifier")
+  # Fall back to "playing-card-classifier" if custom domain is not specified
+  model_prefix = var.custom_domain != "" ? split(".", var.custom_domain)[0] : "playing-card-classifier"
+  sagemaker_model_name    = "${local.model_prefix}-model"
+  sagemaker_config_name   = "${local.model_prefix}-config"
+  sagemaker_endpoint_name = "${local.model_prefix}-endpoint"
 }
 
 # ==========================================
@@ -225,7 +232,7 @@ resource "aws_iam_role_policy" "sagemaker_policy" {
 
 # SageMaker Model
 resource "aws_sagemaker_model" "model" {
-  name               = "playing-card-classification-model"
+  name               = local.sagemaker_model_name
   execution_role_arn = aws_iam_role.sagemaker_role.arn
 
   primary_container {
@@ -236,7 +243,7 @@ resource "aws_sagemaker_model" "model" {
 
 # SageMaker Endpoint Configuration
 resource "aws_sagemaker_endpoint_configuration" "endpoint_config" {
-  name = "card-classifier-config"
+  name = local.sagemaker_config_name
 
   production_variants {
     variant_name           = "AllTraffic"
@@ -260,7 +267,7 @@ resource "aws_sagemaker_endpoint_configuration" "endpoint_config" {
 
 # SageMaker Endpoint
 resource "aws_sagemaker_endpoint" "endpoint" {
-  name                 = "playing-card-classification-endpoint"
+  name                 = local.sagemaker_endpoint_name
   endpoint_config_name = aws_sagemaker_endpoint_configuration.endpoint_config.name
 
   tags = {
