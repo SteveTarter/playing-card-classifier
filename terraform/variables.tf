@@ -75,3 +75,9 @@ variable "s3_target_prefix" {
   description = "The folder structure prefix to store data in the backend bucket."
   default     = "raw_data/"
 }
+
+variable "allowed_origins" {
+  type        = list(string)
+  description = "List of whitelisted CORS origins for the Lambda backend."
+  default     = []
+}

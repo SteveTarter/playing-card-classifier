@@ -12,6 +12,14 @@ ALLOWED_ORIGINS = [
     "http://card-classifier.tarterware.info:3000"
 ]
 
+# Append any custom origins passed via environment variable
+_env_origins = os.environ.get("ALLOWED_ORIGINS")
+if _env_origins:
+    for _o in _env_origins.split(","):
+        _o_stripped = _o.strip()
+        if _o_stripped and _o_stripped not in ALLOWED_ORIGINS:
+            ALLOWED_ORIGINS.append(_o_stripped)
+
 # Define label mapping (example: index to card name)
 label_map = [
  'ace of clubs',

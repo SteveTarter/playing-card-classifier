@@ -350,6 +350,7 @@ resource "aws_lambda_function" "classifier_lambda" {
       BUCKET_NAME             = data.aws_s3_bucket.backend.bucket
       S3_TARGET_PREFIX        = var.s3_target_prefix
       SAGEMAKER_ENDPOINT_NAME = aws_sagemaker_endpoint.endpoint.name
+      ALLOWED_ORIGINS         = join(",", concat(var.custom_domain != "" ? ["https://${var.custom_domain}"] : [], var.allowed_origins))
     }
   }
 
