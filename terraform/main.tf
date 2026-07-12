@@ -145,19 +145,13 @@ resource "aws_route53_record" "dns" {
 # ==========================================
 
 # S3 Bucket for model artifacts & predictions
-resource "aws_s3_bucket" "backend" {
-  bucket        = var.backend_bucket_name
-  force_destroy = true
-
-  tags = {
-    Name        = "card-classifier-backend"
-    Environment = var.environment
-  }
+data "aws_s3_bucket" "backend" {
+  bucket = var.backend_bucket_name
 }
 
 # Upload model.tar.gz to S3
 resource "aws_s3_object" "model_tar" {
-  bucket = aws_s3_bucket.backend.bucket
+  bucket = data.aws_s3_bucket.backend.bucket
   key    = "model/model.tar.gz"
   source = "${path.module}/../model/model.tar.gz"
   etag   = filemd5("${path.module}/../model/model.tar.gz")
@@ -202,8 +196,8 @@ resource "aws_iam_role_policy" "sagemaker_policy" {
           "s3:ListBucket"
         ]
         Resource = [
-          aws_s3_bucket.backend.arn,
-          "${aws_s3_bucket.backend.arn}/*"
+          data.aws_s3_bucket.backend.arn,
+          "${data.aws_s3_bucket.backend.arn}/*"
         ]
       },
       {
@@ -226,7 +220,7 @@ resource "aws_sagemaker_model" "model" {
 
   primary_container {
     image          = var.sagemaker_ecr_image_uri
-    model_data_url = "s3://${aws_s3_bucket.backend.bucket}/${aws_s3_object.model_tar.key}"
+    model_data_url = "s3://${data.aws_s3_bucket.backend.bucket}/${aws_s3_object.model_tar.key}"
   }
 }
 
@@ -320,7 +314,7 @@ resource "aws_iam_role_policy" "lambda_policy" {
         Action = [
           "s3:PutObject"
         ]
-        Resource = "${aws_s3_bucket.backend.arn}/*"
+        Resource = "${data.aws_s3_bucket.backend.arn}/*"
       },
       {
         Effect = "Allow"
@@ -353,7 +347,7 @@ resource "aws_lambda_function" "classifier_lambda" {
 
   environment {
     variables = {
-      BUCKET_NAME             = aws_s3_bucket.backend.bucket
+      BUCKET_NAME             = data.aws_s3_bucket.backend.bucket
       S3_TARGET_PREFIX        = var.s3_target_prefix
       SAGEMAKER_ENDPOINT_NAME = aws_sagemaker_endpoint.endpoint.name
     }
