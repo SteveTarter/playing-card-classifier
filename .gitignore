@@ -65,3 +65,14 @@ build/
 *~
 *.bak
 *.swp
+
+# Archives
+*.zip
+*.tar.gz
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.backup
+*.tfvars
+*.tfvars.json

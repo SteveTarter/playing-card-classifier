@@ -1,0 +1,37 @@
+{
+  "CallerReference": "$(date +%s)",
+  "Comment": "Card Classifier Frontend",
+  "Aliases": {
+    "Quantity": 1,
+    "Items": ["react-card-classifier.tarterware.com"]
+  },
+  "DefaultRootObject": "index.html",
+  "Enabled": true,
+  "Origins": {
+    "Quantity": 1,
+    "Items": [
+      {
+        "Id": "S3FrontEnd",
+        "DomainName": "react-card-classifier.tarterware.com.s3.amazonaws.com",
+        "S3OriginConfig": { "OriginAccessIdentity": "" }
+      }
+    ]
+  },
+  "ViewerCertificate": {
+    "ACMCertificateArn": "arn:aws:acm:us-east-1:<ACCOUNT-ID>:certificate/<CERTIFICATE-ID>",
+    "SSLSupportMethod": "sni-only",
+    "MinimumProtocolVersion": "TLSv1.2_2021",
+    "CertificateSource": "acm"
+  },
+  "DefaultCacheBehavior": {
+    "TargetOriginId": "S3FrontEnd",
+    "ViewerProtocolPolicy": "redirect-to-https",
+    "AllowedMethods": {
+      "Quantity": 2,
+      "Items": ["GET","HEAD"],
+      "CachedMethods": { "Quantity": 2, "Items": ["GET","HEAD"] }
+    },
+    "Compress": true,
+    "CachePolicyId": "658327ea-f89d-4fab-a63d-7e88639e58f6"
+  }
+}

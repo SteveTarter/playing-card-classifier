@@ -12,6 +12,14 @@ ALLOWED_ORIGINS = [
     "http://card-classifier.tarterware.info:3000"
 ]
 
+# Append any custom origins passed via environment variable
+_env_origins = os.environ.get("ALLOWED_ORIGINS")
+if _env_origins:
+    for _o in _env_origins.split(","):
+        _o_stripped = _o.strip()
+        if _o_stripped and _o_stripped not in ALLOWED_ORIGINS:
+            ALLOWED_ORIGINS.append(_o_stripped)
+
 # Define label mapping (example: index to card name)
 label_map = [
  'ace of clubs',
@@ -125,9 +133,10 @@ def lambda_handler(event, context):
         payload = json.dumps({"keras_tensor": arr.tolist()});
 
         # Invoke SageMaker endpoint
+        endpoint_name = os.environ.get("SAGEMAKER_ENDPOINT_NAME", "playing-card-classification-endpoint")
         runtime = boto3.client("sagemaker-runtime")
         response = runtime.invoke_endpoint(
-            EndpointName="playing-card-classification-endpoint",
+            EndpointName=endpoint_name,
             ContentType="application/json",
             Body=payload
         )
