@@ -81,3 +81,10 @@ variable "allowed_origins" {
   description = "List of whitelisted CORS origins for the Lambda backend."
   default     = []
 }
+
+variable "cognito_user_pool_arn" {
+  type        = string
+  description = "The ARN of the Cognito User Pool used to authorize admin users."
+  default     = ""
+}
+
