@@ -109,18 +109,21 @@ def lambda_handler(event, context):
 
         # Route administrative calls
         path = event.get("path", "")
-        if path.endswith("/grading"):
+        if path.endswith("/stats"):
             http_method = event.get("httpMethod", "")
             if http_method == "GET":
                 query_params = event.get("queryStringParameters") or {}
-                action = query_params.get("action", "list")
+                action = query_params.get("action", "stats")
                 if action == "stats":
                     return handle_get_stats(cors_headers)
                 elif action == "details":
                     filter_type = query_params.get("filter_type", "")
                     filter_value = query_params.get("filter_value", "")
                     return handle_get_details(filter_type, filter_value, cors_headers)
-                
+
+        elif path.endswith("/grading"):
+            http_method = event.get("httpMethod", "")
+            if http_method == "GET":
                 # Other GET actions (like action=list) require auth
                 if not is_admin_authorized(event):
                     return {

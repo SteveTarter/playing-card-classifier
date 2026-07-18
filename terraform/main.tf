@@ -454,12 +454,13 @@ resource "aws_api_gateway_resource" "grading" {
   path_part   = "grading"
 }
 
-# Method: GET /grading
+# Method: GET /grading (Requires Authentication)
 resource "aws_api_gateway_method" "get_grading" {
   rest_api_id   = aws_api_gateway_rest_api.api.id
   resource_id   = aws_api_gateway_resource.grading.id
   http_method   = "GET"
-  authorization = "NONE"
+  authorization = "COGNITO_USER_POOLS"
+  authorizer_id = aws_api_gateway_authorizer.cognito.id
 }
 
 # Method: POST /grading
@@ -509,6 +510,49 @@ resource "aws_api_gateway_integration" "options_grading_integration" {
   uri                     = aws_lambda_function.classifier_lambda.invoke_arn
 }
 
+# Resource: /stats
+resource "aws_api_gateway_resource" "stats" {
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  parent_id   = aws_api_gateway_rest_api.api.root_resource_id
+  path_part   = "stats"
+}
+
+# Method: GET /stats (Publicly Accessible)
+resource "aws_api_gateway_method" "get_stats" {
+  rest_api_id   = aws_api_gateway_rest_api.api.id
+  resource_id   = aws_api_gateway_resource.stats.id
+  http_method   = "GET"
+  authorization = "NONE"
+}
+
+# Method: OPTIONS /stats (CORS preflight)
+resource "aws_api_gateway_method" "options_stats" {
+  rest_api_id   = aws_api_gateway_rest_api.api.id
+  resource_id   = aws_api_gateway_resource.stats.id
+  http_method   = "OPTIONS"
+  authorization = "NONE"
+}
+
+# Integration: GET /stats -> Lambda
+resource "aws_api_gateway_integration" "get_stats_integration" {
+  rest_api_id             = aws_api_gateway_rest_api.api.id
+  resource_id             = aws_api_gateway_resource.stats.id
+  http_method             = aws_api_gateway_method.get_stats.http_method
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = aws_lambda_function.classifier_lambda.invoke_arn
+}
+
+# Integration: OPTIONS /stats -> Lambda
+resource "aws_api_gateway_integration" "options_stats_integration" {
+  rest_api_id             = aws_api_gateway_rest_api.api.id
+  resource_id             = aws_api_gateway_resource.stats.id
+  http_method             = aws_api_gateway_method.options_stats.http_method
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = aws_lambda_function.classifier_lambda.invoke_arn
+}
+
 # Lambda Permissions for API Gateway
 resource "aws_lambda_permission" "apigw_post" {
   statement_id  = "AllowAPIGatewayInvokePost"
@@ -544,7 +588,12 @@ resource "aws_api_gateway_deployment" "api_deploy" {
       aws_api_gateway_method.options_grading.id,
       aws_api_gateway_integration.get_grading_integration.id,
       aws_api_gateway_integration.post_grading_integration.id,
-      aws_api_gateway_integration.options_grading_integration.id
+      aws_api_gateway_integration.options_grading_integration.id,
+      aws_api_gateway_resource.stats.id,
+      aws_api_gateway_method.get_stats.id,
+      aws_api_gateway_method.options_stats.id,
+      aws_api_gateway_integration.get_stats_integration.id,
+      aws_api_gateway_integration.options_stats_integration.id
     ]))
   }
 
@@ -557,7 +606,9 @@ resource "aws_api_gateway_deployment" "api_deploy" {
     aws_api_gateway_integration.options_integration,
     aws_api_gateway_integration.get_grading_integration,
     aws_api_gateway_integration.post_grading_integration,
-    aws_api_gateway_integration.options_grading_integration
+    aws_api_gateway_integration.options_grading_integration,
+    aws_api_gateway_integration.get_stats_integration,
+    aws_api_gateway_integration.options_stats_integration
   ]
 }
 

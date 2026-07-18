@@ -21,7 +21,7 @@ export default function ReviewDetails({ filterType, filterValue, onBack }) {
       }
       
       const res = await fetch(
-        `${API_BASE_URL}/grading?action=details&filter_type=${filterType}&filter_value=${filterValue}&_=${Date.now()}`,
+        `${API_BASE_URL}/stats?action=details&filter_type=${filterType}&filter_value=${filterValue}&_=${Date.now()}`,
         { headers }
       );
       

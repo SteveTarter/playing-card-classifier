@@ -66,7 +66,7 @@ export default function StatisticsDashboard({ onViewDetails }) {
       if (idToken) {
         headers["Authorization"] = `Bearer ${idToken}`;
       }
-      const res = await fetch(`${API_BASE_URL}/grading?action=stats&_=${Date.now()}`, {
+      const res = await fetch(`${API_BASE_URL}/stats?action=stats&_=${Date.now()}`, {
         headers
       });
       if (!res.ok) {
