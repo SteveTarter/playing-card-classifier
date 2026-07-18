@@ -329,9 +329,17 @@ resource "aws_iam_role_policy" "lambda_policy" {
       {
         Effect = "Allow"
         Action = [
-          "s3:PutObject"
+          "s3:PutObject",
+          "s3:GetObject"
         ]
         Resource = "${data.aws_s3_bucket.backend.arn}/*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "s3:ListBucket"
+        ]
+        Resource = data.aws_s3_bucket.backend.arn
       },
       {
         Effect = "Allow"
@@ -361,6 +369,7 @@ resource "aws_lambda_function" "classifier_lambda" {
   runtime       = "python3.9"
   timeout       = 60
   memory_size   = 512
+  source_code_hash = filebase64sha256("${path.module}/lambda.zip")
 
   environment {
     variables = {
@@ -430,6 +439,76 @@ resource "aws_api_gateway_integration" "options_integration" {
   uri                     = aws_lambda_function.classifier_lambda.invoke_arn
 }
 
+# Cognito Authorizer
+resource "aws_api_gateway_authorizer" "cognito" {
+  name          = "card-classifier-cognito-authorizer"
+  type          = "COGNITO_USER_POOLS"
+  rest_api_id   = aws_api_gateway_rest_api.api.id
+  provider_arns = [var.cognito_user_pool_arn]
+}
+
+# Resource: /grading
+resource "aws_api_gateway_resource" "grading" {
+  rest_api_id = aws_api_gateway_rest_api.api.id
+  parent_id   = aws_api_gateway_rest_api.api.root_resource_id
+  path_part   = "grading"
+}
+
+# Method: GET /grading
+resource "aws_api_gateway_method" "get_grading" {
+  rest_api_id   = aws_api_gateway_rest_api.api.id
+  resource_id   = aws_api_gateway_resource.grading.id
+  http_method   = "GET"
+  authorization = "NONE"
+}
+
+# Method: POST /grading
+resource "aws_api_gateway_method" "post_grading" {
+  rest_api_id   = aws_api_gateway_rest_api.api.id
+  resource_id   = aws_api_gateway_resource.grading.id
+  http_method   = "POST"
+  authorization = "COGNITO_USER_POOLS"
+  authorizer_id = aws_api_gateway_authorizer.cognito.id
+}
+
+# Method: OPTIONS /grading (CORS preflight)
+resource "aws_api_gateway_method" "options_grading" {
+  rest_api_id   = aws_api_gateway_rest_api.api.id
+  resource_id   = aws_api_gateway_resource.grading.id
+  http_method   = "OPTIONS"
+  authorization = "NONE"
+}
+
+# Integration: GET /grading -> Lambda
+resource "aws_api_gateway_integration" "get_grading_integration" {
+  rest_api_id             = aws_api_gateway_rest_api.api.id
+  resource_id             = aws_api_gateway_resource.grading.id
+  http_method             = aws_api_gateway_method.get_grading.http_method
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = aws_lambda_function.classifier_lambda.invoke_arn
+}
+
+# Integration: POST /grading -> Lambda
+resource "aws_api_gateway_integration" "post_grading_integration" {
+  rest_api_id             = aws_api_gateway_rest_api.api.id
+  resource_id             = aws_api_gateway_resource.grading.id
+  http_method             = aws_api_gateway_method.post_grading.http_method
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = aws_lambda_function.classifier_lambda.invoke_arn
+}
+
+# Integration: OPTIONS /grading -> Lambda
+resource "aws_api_gateway_integration" "options_grading_integration" {
+  rest_api_id             = aws_api_gateway_rest_api.api.id
+  resource_id             = aws_api_gateway_resource.grading.id
+  http_method             = aws_api_gateway_method.options_grading.http_method
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = aws_lambda_function.classifier_lambda.invoke_arn
+}
+
 # Lambda Permissions for API Gateway
 resource "aws_lambda_permission" "apigw_post" {
   statement_id  = "AllowAPIGatewayInvokePost"
@@ -457,7 +536,15 @@ resource "aws_api_gateway_deployment" "api_deploy" {
       aws_api_gateway_method.post_predict.id,
       aws_api_gateway_method.options_predict.id,
       aws_api_gateway_integration.post_integration.id,
-      aws_api_gateway_integration.options_integration.id
+      aws_api_gateway_integration.options_integration.id,
+      aws_api_gateway_resource.grading.id,
+      aws_api_gateway_method.get_grading.id,
+      aws_api_gateway_method.get_grading.authorization,
+      aws_api_gateway_method.post_grading.id,
+      aws_api_gateway_method.options_grading.id,
+      aws_api_gateway_integration.get_grading_integration.id,
+      aws_api_gateway_integration.post_grading_integration.id,
+      aws_api_gateway_integration.options_grading_integration.id
     ]))
   }
 
@@ -467,7 +554,10 @@ resource "aws_api_gateway_deployment" "api_deploy" {
 
   depends_on = [
     aws_api_gateway_integration.post_integration,
-    aws_api_gateway_integration.options_integration
+    aws_api_gateway_integration.options_integration,
+    aws_api_gateway_integration.get_grading_integration,
+    aws_api_gateway_integration.post_grading_integration,
+    aws_api_gateway_integration.options_grading_integration
   ]
 }
 
