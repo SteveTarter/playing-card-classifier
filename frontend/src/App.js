@@ -5,12 +5,15 @@ import InfoPanel from "./InfoPanel";
 import Login from "./Login";
 import GradingDashboard from "./GradingDashboard";
 import StatisticsDashboard from "./StatisticsDashboard";
+import ReviewDetails from "./ReviewDetails";
 import { AuthHelper } from "./AuthHelper";
 
 function App() {
   const [activeSection, setActiveSection] = useState('');
   const [currentView, setCurrentView] = useState('classifier');
   const [isAuthenticated, setIsAuthenticated] = useState(AuthHelper.isAuthenticated());
+  const [reviewFilterType, setReviewFilterType] = useState("");
+  const [reviewFilterValue, setReviewFilterValue] = useState("");
 
   // Check auth status on mount
   useEffect(() => {
@@ -48,7 +51,25 @@ function App() {
     }
 
     if (currentView === 'statistics') {
-      return <StatisticsDashboard />;
+      return (
+        <StatisticsDashboard
+          onViewDetails={(type, value) => {
+            setReviewFilterType(type);
+            setReviewFilterValue(value);
+            setCurrentView('review');
+          }}
+        />
+      );
+    }
+
+    if (currentView === 'review') {
+      return (
+        <ReviewDetails
+          filterType={reviewFilterType}
+          filterValue={reviewFilterValue}
+          onBack={() => setCurrentView('statistics')}
+        />
+      );
     }
 
     return (
