@@ -116,6 +116,10 @@ def lambda_handler(event, context):
                 action = query_params.get("action", "list")
                 if action == "stats":
                     return handle_get_stats(cors_headers)
+                elif action == "details":
+                    filter_type = query_params.get("filter_type", "")
+                    filter_value = query_params.get("filter_value", "")
+                    return handle_get_details(filter_type, filter_value, cors_headers)
                 
                 # Other GET actions (like action=list) require auth
                 if not is_admin_authorized(event):
@@ -431,6 +435,97 @@ def handle_submit_grading(body, cors_headers):
         "statusCode": 200,
         "headers": cors_headers,
         "body": json.dumps({"message": "Grading saved successfully.", "is_correct": is_correct})
+    }
+
+def handle_get_details(filter_type, filter_value, cors_headers):
+    s3 = boto3.client("s3")
+    bucket_name = os.environ.get("BUCKET_NAME")
+    if not bucket_name:
+        raise ValueError("BUCKET_NAME environment variable not set")
+        
+    s3_target_prefix = os.environ.get("S3_TARGET_PREFIX", "raw_data/")
+    if not s3_target_prefix.endswith('/'):
+        s3_target_prefix += '/'
+
+    # 1. List all json files in results/
+    keys = []
+    paginator = s3.get_paginator('list_objects_v2')
+    try:
+        for page in paginator.paginate(Bucket=bucket_name, Prefix="results/"):
+            for obj in page.get('Contents', []):
+                key = obj['Key']
+                if key.endswith(".json"):
+                    keys.append(key)
+    except Exception as e:
+        pass
+
+    results_data = []
+    def fetch_key(key):
+        try:
+            res_obj = s3.get_object(Bucket=bucket_name, Key=key)
+            return json.loads(res_obj["Body"].read().decode('utf-8'))
+        except Exception as e:
+            return None
+
+    # Load results in parallel
+    with concurrent.futures.ThreadPoolExecutor(max_workers=20) as executor:
+        futures = {executor.submit(fetch_key, key): key for key in keys}
+        for future in concurrent.futures.as_completed(futures):
+            data = future.result()
+            if data:
+                results_data.append(data)
+
+    # 2. Filter results
+    filtered_results = []
+    filter_value = filter_value.lower().strip()
+    
+    for r in results_data:
+        actual = r.get("actual_label", "")
+        
+        match = False
+        if filter_type == "special" and filter_value == "invalid":
+            if actual == "invalid":
+                match = True
+        elif actual != "invalid":
+            actual_rank, actual_suit = parse_card(actual)
+            if filter_type == "suit":
+                if actual_suit == filter_value:
+                    match = True
+            elif filter_type == "rank":
+                if actual_rank == filter_value:
+                    match = True
+                
+        if match:
+            # Generate pre-signed URL
+            req_id = r.get("request_id", "")
+            image_url = ""
+            if req_id:
+                try:
+                    image_url = s3.generate_presigned_url(
+                        'get_object',
+                        Params={'Bucket': bucket_name, 'Key': f"{s3_target_prefix}{req_id}/image.png"},
+                        ExpiresIn=3600
+                    )
+                except Exception:
+                    pass
+            
+            filtered_results.append({
+                "request_id": req_id,
+                "predicted_label": r.get("predicted_label"),
+                "actual_label": actual,
+                "confidence": r.get("confidence"),
+                "is_correct": r.get("is_correct"),
+                "judged_at": r.get("judged_at", r.get("timestamp")),
+                "image_url": image_url
+            })
+            
+    # Sort by judged_at or timestamp descending (newest first)
+    filtered_results.sort(key=lambda x: x.get("judged_at") or "", reverse=True)
+    
+    return {
+        "statusCode": 200,
+        "headers": cors_headers,
+        "body": json.dumps({"cards": filtered_results})
     }
 
 

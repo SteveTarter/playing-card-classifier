@@ -52,7 +52,7 @@ function AccuracyRing({ accuracy, size = 120, strokeWidth = 10 }) {
   );
 }
 
-export default function StatisticsDashboard() {
+export default function StatisticsDashboard({ onViewDetails }) {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -192,9 +192,25 @@ export default function StatisticsDashboard() {
                 <span>Incorrect Guesses:</span>
                 <span className="fw-bold text-danger">{stats.total_judged - stats.total_correct}</span>
               </div>
-              <div className="d-flex justify-content-between py-2">
+              <div 
+                className="d-flex justify-content-between py-2 rounded-2 px-2"
+                style={{ 
+                  cursor: stats.total_invalid > 0 ? "pointer" : "default",
+                  transition: "background-color 0.2s"
+                }}
+                onClick={() => stats.total_invalid > 0 && onViewDetails && onViewDetails('special', 'invalid')}
+                onMouseEnter={(e) => stats.total_invalid > 0 && (e.currentTarget.style.backgroundColor = '#f8f9fa')}
+                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+              >
                 <span>Invalid Cards (Excluded):</span>
-                <span className="fw-bold text-warning">⚠️ {stats.total_invalid || 0}</span>
+                <span className="fw-bold text-warning" style={{ fontSize: '0.9rem' }}>
+                  ⚠️ {stats.total_invalid || 0}
+                  {stats.total_invalid > 0 && (
+                    <span className="text-muted ms-2 fw-normal" style={{ fontSize: '0.75rem' }}>
+                      (Click to review)
+                    </span>
+                  )}
+                </span>
               </div>
             </Card.Body>
           </Card>
@@ -205,12 +221,25 @@ export default function StatisticsDashboard() {
         {/* Suit breakdowns */}
         <Col md={6}>
           <Card className="shadow-sm border-0 rounded-3 p-4 h-100">
-            <h4 className="fw-bold mb-4 fs-5">Accuracy by Suit</h4>
+            <div className="d-flex align-items-baseline justify-content-between mb-4 flex-wrap gap-2">
+              <h4 className="fw-bold m-0 fs-5">Accuracy by Suit</h4>
+              <span className="text-muted small">(Click suit to review history)</span>
+            </div>
             {stats.accuracy_by_suit.map((s) => {
               const meta = suitMeta[s.suit] || { label: s.suit, hex: "#4A5568" };
               const acc = s.accuracy * 100;
               return (
-                <div key={s.suit} className="mb-3">
+                <div 
+                  key={s.suit} 
+                  className="mb-3 p-2 rounded-2" 
+                  style={{ 
+                    cursor: "pointer", 
+                    transition: "all 0.2s" 
+                  }}
+                  onClick={() => onViewDetails && onViewDetails('suit', s.suit)}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8f9fa'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                >
                   <div className="d-flex justify-content-between mb-1">
                     <span className="fw-semibold text-capitalize">{meta.label}</span>
                     <span className="text-muted">
@@ -239,7 +268,10 @@ export default function StatisticsDashboard() {
         {/* Rank breakdowns */}
         <Col md={6}>
           <Card className="shadow-sm border-0 rounded-3 p-4 h-100">
-            <h4 className="fw-bold mb-4 fs-5">Accuracy by Rank</h4>
+            <div className="d-flex align-items-baseline justify-content-between mb-4 flex-wrap gap-2">
+              <h4 className="fw-bold m-0 fs-5">Accuracy by Rank</h4>
+              <span className="text-muted small">(Click card to review history)</span>
+            </div>
             <div className="d-flex flex-wrap gap-2 justify-content-start">
               {stats.accuracy_by_rank.map((r) => {
                 const acc = r.accuracy * 100;
@@ -248,7 +280,24 @@ export default function StatisticsDashboard() {
                 else if (acc >= 70) bgClass = "bg-warning text-dark";
 
                 return (
-                  <Card key={r.rank} className="text-center shadow-none border" style={{ width: "90px" }}>
+                  <Card 
+                    key={r.rank} 
+                    className="text-center shadow-none border" 
+                    style={{ 
+                      width: "90px", 
+                      cursor: "pointer", 
+                      transition: "all 0.2s" 
+                    }}
+                    onClick={() => onViewDetails && onViewDetails('rank', r.rank)}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = 'translateY(-3px)';
+                      e.currentTarget.style.boxShadow = '0 4px 8px rgba(0,0,0,0.05)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = 'none';
+                      e.currentTarget.style.boxShadow = 'none';
+                    }}
+                  >
                     <div className="bg-light py-1 fw-bold text-capitalize border-bottom fs-6" style={{ height: "30px", overflow: "hidden" }}>
                       {r.rank}
                     </div>
