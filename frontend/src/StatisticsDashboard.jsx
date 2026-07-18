@@ -248,12 +248,13 @@ export default function StatisticsDashboard() {
                 else if (acc >= 70) bgClass = "bg-warning text-dark";
 
                 return (
-                  <Card key={r.rank} className="text-center shadow-none border" style={{ width: "75px" }}>
+                  <Card key={r.rank} className="text-center shadow-none border" style={{ width: "90px" }}>
                     <div className="bg-light py-1 fw-bold text-capitalize border-bottom fs-6" style={{ height: "30px", overflow: "hidden" }}>
-                      {r.rank.substring(0, 5)}
+                      {r.rank}
                     </div>
-                    <div className={`py-2 text-white fw-bold ${bgClass}`} style={{ fontSize: "0.85rem" }}>
-                      {acc.toFixed(0)}%
+                    <div className={`py-2 text-white ${bgClass}`} style={{ lineHeight: "1.2" }}>
+                      <div className="fw-bold" style={{ fontSize: "0.9rem" }}>{acc.toFixed(0)}%</div>
+                      <div style={{ fontSize: "0.75rem", opacity: 0.85 }}>({r.correct}/{r.total})</div>
                     </div>
                   </Card>
                 );

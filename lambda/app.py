@@ -556,6 +556,8 @@ def handle_get_stats(cors_headers):
             "total": stats["total"],
             "accuracy": stats["correct"] / stats["total"] if stats["total"] > 0 else 0
         })
+    # Sort from best accuracy to worst (secondary sort by total reviewed descending)
+    ranks_list.sort(key=lambda x: (x["accuracy"], x["total"]), reverse=True)
         
     common_errors = []
     for (pred, actual), count in error_counts.items():

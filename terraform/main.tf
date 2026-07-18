@@ -539,6 +539,7 @@ resource "aws_api_gateway_deployment" "api_deploy" {
       aws_api_gateway_integration.options_integration.id,
       aws_api_gateway_resource.grading.id,
       aws_api_gateway_method.get_grading.id,
+      aws_api_gateway_method.get_grading.authorization,
       aws_api_gateway_method.post_grading.id,
       aws_api_gateway_method.options_grading.id,
       aws_api_gateway_integration.get_grading_integration.id,
