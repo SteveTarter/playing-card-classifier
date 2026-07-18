@@ -48,11 +48,7 @@ function App() {
     }
 
     if (currentView === 'statistics') {
-      return isAuthenticated ? (
-        <StatisticsDashboard />
-      ) : (
-        <Login onLoginSuccess={handleLoginSuccess} />
-      );
+      return <StatisticsDashboard />;
     }
 
     return (

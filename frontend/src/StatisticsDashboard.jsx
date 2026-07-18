@@ -61,11 +61,13 @@ export default function StatisticsDashboard() {
     setLoading(true);
     setError("");
     try {
+      const headers = {};
       const idToken = AuthHelper.getIdToken();
+      if (idToken) {
+        headers["Authorization"] = `Bearer ${idToken}`;
+      }
       const res = await fetch(`${API_BASE_URL}/grading?action=stats&_=${Date.now()}`, {
-        headers: {
-          Authorization: `Bearer ${idToken}`
-        }
+        headers
       });
       if (!res.ok) {
         throw new Error(`HTTP ${res.status}: ${res.statusText}`);
@@ -179,16 +181,20 @@ export default function StatisticsDashboard() {
             <Card.Body>
               <Card.Title className="text-muted mb-4 fs-6 fw-semibold text-uppercase">System Summary</Card.Title>
               <div className="d-flex justify-content-between py-2 border-bottom">
-                <span>Total Reviewed:</span>
+                <span>Valid Reviewed:</span>
                 <span className="fw-bold">{stats.total_judged}</span>
               </div>
               <div className="d-flex justify-content-between py-2 border-bottom">
                 <span>Correct Guesses:</span>
                 <span className="fw-bold text-success">{stats.total_correct}</span>
               </div>
-              <div className="d-flex justify-content-between py-2">
+              <div className="d-flex justify-content-between py-2 border-bottom">
                 <span>Incorrect Guesses:</span>
                 <span className="fw-bold text-danger">{stats.total_judged - stats.total_correct}</span>
+              </div>
+              <div className="d-flex justify-content-between py-2">
+                <span>Invalid Cards (Excluded):</span>
+                <span className="fw-bold text-warning">⚠️ {stats.total_invalid || 0}</span>
               </div>
             </Card.Body>
           </Card>
@@ -302,7 +308,9 @@ export default function StatisticsDashboard() {
                       <td className="text-capitalize text-muted">{item.predicted_label}</td>
                       <td className="text-capitalize fw-semibold">{item.actual_label}</td>
                       <td>
-                        {item.is_correct ? (
+                        {item.actual_label === "invalid" ? (
+                          <Badge bg="warning" text="dark">Invalid</Badge>
+                        ) : item.is_correct ? (
                           <Badge bg="success">Correct</Badge>
                         ) : (
                           <Badge bg="danger">Corrected</Badge>

@@ -126,7 +126,11 @@ export default function GradingDashboard() {
       }
       const data = await res.json();
       
-      setMessage(data.is_correct ? "Approved! Guess was correct." : `Correction saved: was actually ${actualLabel}.`);
+      if (actualLabel === "invalid") {
+        setMessage("Card marked as invalid/unclear.");
+      } else {
+        setMessage(data.is_correct ? "Approved! Guess was correct." : `Correction saved: was actually ${actualLabel}.`);
+      }
       
       // Remove this card from the queue locally
       setCards(prev => {
@@ -223,28 +227,42 @@ export default function GradingDashboard() {
               </div>
 
               {!showCorrectionSelect ? (
-                <Row className="g-2">
-                  <Col xs={6}>
-                    <Button
-                      onClick={() => submitGrade(activeCard.request_id, activeCard.predicted_label)}
-                      variant="success"
-                      className="w-100 py-3 fw-bold rounded-2"
-                      disabled={submitting}
-                    >
-                      {submitting ? "Saving..." : "✓ Correct (Approve)"}
-                    </Button>
-                  </Col>
-                  <Col xs={6}>
-                    <Button
-                      onClick={() => setShowCorrectionSelect(true)}
-                      variant="danger"
-                      className="w-100 py-3 fw-bold rounded-2"
-                      disabled={submitting}
-                    >
-                      ✗ Wrong (Correct)
-                    </Button>
-                  </Col>
-                </Row>
+                <div>
+                  <Row className="g-2">
+                    <Col xs={6}>
+                      <Button
+                        onClick={() => submitGrade(activeCard.request_id, activeCard.predicted_label)}
+                        variant="success"
+                        className="w-100 py-3 fw-bold rounded-2"
+                        disabled={submitting}
+                      >
+                        {submitting ? "Saving..." : "✓ Correct (Approve)"}
+                      </Button>
+                    </Col>
+                    <Col xs={6}>
+                      <Button
+                        onClick={() => setShowCorrectionSelect(true)}
+                        variant="danger"
+                        className="w-100 py-3 fw-bold rounded-2"
+                        disabled={submitting}
+                      >
+                        ✗ Wrong (Correct)
+                      </Button>
+                    </Col>
+                  </Row>
+                  <Row className="g-2 mt-2">
+                    <Col xs={12}>
+                      <Button
+                        onClick={() => submitGrade(activeCard.request_id, "invalid")}
+                        variant="outline-secondary"
+                        className="w-100 py-2 fw-semibold rounded-2"
+                        disabled={submitting}
+                      >
+                        ⚠️ Invalid Card (Not a Card / Bad Image)
+                      </Button>
+                    </Col>
+                  </Row>
+                </div>
               ) : (
                 <div className="bg-light p-3 border rounded-3 mb-3">
                   <Form.Group className="mb-3" controlId="correctionSelect">

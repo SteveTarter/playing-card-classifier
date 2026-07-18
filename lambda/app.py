@@ -110,23 +110,29 @@ def lambda_handler(event, context):
         # Route administrative calls
         path = event.get("path", "")
         if path.endswith("/grading"):
-            # Check auth first
-            if not is_admin_authorized(event):
-                return {
-                    "statusCode": 403,
-                    "headers": cors_headers,
-                    "body": json.dumps({"error": "Unauthorized: Access restricted to superusers."})
-                }
-
             http_method = event.get("httpMethod", "")
             if http_method == "GET":
                 query_params = event.get("queryStringParameters") or {}
                 action = query_params.get("action", "list")
                 if action == "stats":
                     return handle_get_stats(cors_headers)
-                else:
-                    return handle_list_unjudged(cors_headers)
+                
+                # Other GET actions (like action=list) require auth
+                if not is_admin_authorized(event):
+                    return {
+                        "statusCode": 403,
+                        "headers": cors_headers,
+                        "body": json.dumps({"error": "Unauthorized: Access restricted to superusers."})
+                    }
+                return handle_list_unjudged(cors_headers)
+                
             elif http_method == "POST":
+                if not is_admin_authorized(event):
+                    return {
+                        "statusCode": 403,
+                        "headers": cors_headers,
+                        "body": json.dumps({"error": "Unauthorized: Access restricted to superusers."})
+                    }
                 body = json.loads(event["body"])
                 return handle_submit_grading(body, cors_headers)
             else:
@@ -483,6 +489,7 @@ def handle_get_stats(cors_headers):
             "body": json.dumps({
                 "total_judged": 0,
                 "total_correct": 0,
+                "total_invalid": 0,
                 "overall_accuracy": 0.0,
                 "accuracy_by_suit": [],
                 "accuracy_by_rank": [],
@@ -493,8 +500,11 @@ def handle_get_stats(cors_headers):
             })
         }
         
-    total_judged = len(results_data)
-    total_correct = sum(1 for r in results_data if r.get("is_correct", False))
+    total_invalid = sum(1 for r in results_data if r.get("actual_label") == "invalid")
+    valid_results = [r for r in results_data if r.get("actual_label") != "invalid"]
+    
+    total_judged = len(valid_results)
+    total_correct = sum(1 for r in valid_results if r.get("is_correct", False))
     
     suit_stats = {}
     rank_stats = {}
@@ -502,7 +512,7 @@ def handle_get_stats(cors_headers):
     correct_confidences = []
     incorrect_confidences = []
     
-    for r in results_data:
+    for r in valid_results:
         pred = r.get("predicted_label", "")
         actual = r.get("actual_label", "")
         is_correct = r.get("is_correct", False)
@@ -562,6 +572,7 @@ def handle_get_stats(cors_headers):
     stats_payload = {
         "total_judged": total_judged,
         "total_correct": total_correct,
+        "total_invalid": total_invalid,
         "overall_accuracy": total_correct / total_judged if total_judged > 0 else 0.0,
         "accuracy_by_suit": suits_list,
         "accuracy_by_rank": ranks_list,
@@ -576,5 +587,3 @@ def handle_get_stats(cors_headers):
         "headers": cors_headers,
         "body": json.dumps(stats_payload)
     }
-
-
