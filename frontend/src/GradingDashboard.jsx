@@ -73,6 +73,16 @@ export default function GradingDashboard() {
   const [message, setMessage] = useState("");
   const [showCorrectionSelect, setShowCorrectionSelect] = useState(false);
   const [correctedLabel, setCorrectedLabel] = useState(CARD_LABELS[0]);
+  const [imageLoading, setImageLoading] = useState(true);
+
+  const activeImageUrl = cards[0]?.image_url;
+
+  useEffect(() => {
+    if (activeImageUrl) {
+      setImageLoading(true);
+    }
+  }, [activeImageUrl]);
+
 
   const fetchUnjudged = useCallback(async () => {
     setLoading(true);
@@ -198,15 +208,22 @@ export default function GradingDashboard() {
       <Row className="justify-content-center">
         <Col md={8} lg={6}>
           <Card className="shadow border-0 rounded-3 overflow-hidden">
-            <div className="bg-light text-center py-4 border-bottom position-relative">
-              <Badge bg="secondary" className="position-absolute top-0 start-0 m-3 fs-6">
+            <div className="bg-light text-center py-4 border-bottom position-relative" style={{ minHeight: "340px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Badge bg="secondary" className="position-absolute top-0 start-0 m-3 fs-6" style={{ zIndex: 1 }}>
                 Queue: {cards.length} remaining
               </Badge>
+              {imageLoading && (
+                <div className="position-absolute top-50 start-50 translate-middle">
+                  <Spinner animation="border" variant="primary" role="status" />
+                </div>
+              )}
               <img
                 src={activeCard.image_url}
                 alt="Card upload"
                 className="img-fluid border rounded shadow-sm bg-white"
-                style={{ maxHeight: 300, objectFit: "contain" }}
+                style={{ maxHeight: 300, objectFit: "contain", display: imageLoading ? "none" : "inline-block" }}
+                onLoad={() => setImageLoading(false)}
+                onError={() => setImageLoading(false)}
               />
             </div>
             
@@ -234,7 +251,7 @@ export default function GradingDashboard() {
                         onClick={() => submitGrade(activeCard.request_id, activeCard.predicted_label)}
                         variant="success"
                         className="w-100 py-3 fw-bold rounded-2"
-                        disabled={submitting}
+                        disabled={submitting || imageLoading}
                       >
                         {submitting ? "Saving..." : "✓ Correct (Approve)"}
                       </Button>
@@ -244,7 +261,7 @@ export default function GradingDashboard() {
                         onClick={() => setShowCorrectionSelect(true)}
                         variant="danger"
                         className="w-100 py-3 fw-bold rounded-2"
-                        disabled={submitting}
+                        disabled={submitting || imageLoading}
                       >
                         ✗ Wrong (Correct)
                       </Button>
@@ -256,7 +273,7 @@ export default function GradingDashboard() {
                         onClick={() => submitGrade(activeCard.request_id, "invalid")}
                         variant="outline-secondary"
                         className="w-100 py-2 fw-semibold rounded-2"
-                        disabled={submitting}
+                        disabled={submitting || imageLoading}
                       >
                         ⚠️ Invalid Card (Not a Card / Bad Image)
                       </Button>
@@ -271,6 +288,7 @@ export default function GradingDashboard() {
                       value={correctedLabel}
                       onChange={(e) => setCorrectedLabel(e.target.value)}
                       className="text-capitalize"
+                      disabled={submitting || imageLoading}
                     >
                       {Object.entries(suitGroups).map(([groupName, labels]) => (
                         <optgroup label={groupName} key={groupName}>
@@ -288,14 +306,14 @@ export default function GradingDashboard() {
                       onClick={() => submitGrade(activeCard.request_id, correctedLabel)}
                       variant="primary"
                       className="flex-grow-1 fw-semibold"
-                      disabled={submitting}
+                      disabled={submitting || imageLoading}
                     >
                       Submit Correction
                     </Button>
                     <Button
                       onClick={() => setShowCorrectionSelect(false)}
                       variant="outline-secondary"
-                      disabled={submitting}
+                      disabled={submitting || imageLoading}
                     >
                       Cancel
                     </Button>
