@@ -538,31 +538,72 @@ def handle_get_stats(cors_headers):
     if not bucket_name:
         raise ValueError("BUCKET_NAME environment variable not set")
         
+    cache_key = "statistics/cache.json"
+    cache_data = None
+    cache_last_modified = None
+    recalculate = False
+
+    try:
+        cache_obj = s3.get_object(Bucket=bucket_name, Key=cache_key)
+        cache_data = json.loads(cache_obj["Body"].read().decode('utf-8'))
+        cache_last_modified = cache_obj["LastModified"]
+    except Exception:
+        recalculate = True
+
     paginator = s3.get_paginator('list_objects_v2')
     keys = []
-    try:
-        for page in paginator.paginate(Bucket=bucket_name, Prefix="results/"):
-            for obj in page.get('Contents', []):
-                if obj['Key'].endswith('.json'):
-                    keys.append(obj['Key'])
-    except Exception as e:
-        pass
-        
-    if not keys:
+    
+    if not recalculate:
+        try:
+            for page in paginator.paginate(Bucket=bucket_name, Prefix="results/"):
+                for obj in page.get('Contents', []):
+                    if obj['Key'].endswith('.json'):
+                        keys.append(obj['Key'])
+                        if obj['LastModified'] > cache_last_modified:
+                            recalculate = True
+        except Exception:
+            recalculate = True
+    else:
+        try:
+            for page in paginator.paginate(Bucket=bucket_name, Prefix="results/"):
+                for obj in page.get('Contents', []):
+                    if obj['Key'].endswith('.json'):
+                        keys.append(obj['Key'])
+        except Exception:
+            pass
+
+    if not recalculate and cache_data is not None:
         return {
             "statusCode": 200,
             "headers": cors_headers,
-            "body": json.dumps({
-                "total_judged": 0,
-                "total_correct": 0,
-                "overall_accuracy": 0.0,
-                "accuracy_by_suit": [],
-                "accuracy_by_rank": [],
-                "common_errors": [],
-                "avg_correct_confidence": 0.0,
-                "avg_incorrect_confidence": 0.0,
-                "recent_judgments": []
-            })
+            "body": json.dumps(cache_data)
+        }
+
+    if not keys:
+        empty_payload = {
+            "total_judged": 0,
+            "total_correct": 0,
+            "overall_accuracy": 0.0,
+            "accuracy_by_suit": [],
+            "accuracy_by_rank": [],
+            "common_errors": [],
+            "avg_correct_confidence": 0.0,
+            "avg_incorrect_confidence": 0.0,
+            "recent_judgments": []
+        }
+        try:
+            s3.put_object(
+                Bucket=bucket_name,
+                Key=cache_key,
+                Body=json.dumps(empty_payload),
+                ContentType="application/json"
+            )
+        except Exception:
+            pass
+        return {
+            "statusCode": 200,
+            "headers": cors_headers,
+            "body": json.dumps(empty_payload)
         }
         
     results_data = []
@@ -581,21 +622,31 @@ def handle_get_stats(cors_headers):
                 results_data.append(data)
                 
     if not results_data:
+        empty_payload_with_invalid = {
+            "total_judged": 0,
+            "total_correct": 0,
+            "total_invalid": 0,
+            "overall_accuracy": 0.0,
+            "accuracy_by_suit": [],
+            "accuracy_by_rank": [],
+            "common_errors": [],
+            "avg_correct_confidence": 0.0,
+            "avg_incorrect_confidence": 0.0,
+            "recent_judgments": []
+        }
+        try:
+            s3.put_object(
+                Bucket=bucket_name,
+                Key=cache_key,
+                Body=json.dumps(empty_payload_with_invalid),
+                ContentType="application/json"
+            )
+        except Exception:
+            pass
         return {
             "statusCode": 200,
             "headers": cors_headers,
-            "body": json.dumps({
-                "total_judged": 0,
-                "total_correct": 0,
-                "total_invalid": 0,
-                "overall_accuracy": 0.0,
-                "accuracy_by_suit": [],
-                "accuracy_by_rank": [],
-                "common_errors": [],
-                "avg_correct_confidence": 0.0,
-                "avg_incorrect_confidence": 0.0,
-                "recent_judgments": []
-            })
+            "body": json.dumps(empty_payload_with_invalid)
         }
         
     total_invalid = sum(1 for r in results_data if r.get("actual_label") == "invalid")
@@ -682,6 +733,16 @@ def handle_get_stats(cors_headers):
         "recent_judgments": sorted(results_data, key=lambda x: x.get("judged_at", ""), reverse=True)[:10]
     }
     
+    try:
+        s3.put_object(
+            Bucket=bucket_name,
+            Key=cache_key,
+            Body=json.dumps(stats_payload),
+            ContentType="application/json"
+        )
+    except Exception:
+        pass
+        
     return {
         "statusCode": 200,
         "headers": cors_headers,
