@@ -2,6 +2,8 @@
 
 This repository is a consolidated monorepo containing the code, ML models, and infrastructure for an AWS-based playing card classification system. It leverages a TensorFlow model trained to identify playing cards from images, exposed via a serverless API endpoint, and consumed by a modern React frontend.
 
+![Card Classifier Interface](./frontend/Resources/img/Screenshot-2023-07-08.png)
+
 ---
 
 ## Project Structure
