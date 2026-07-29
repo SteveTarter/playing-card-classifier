@@ -13,6 +13,9 @@ For deploying the production infrastructure (S3, CloudFront, Lambda, and SageMak
 - **Camera integration**: Captures high-res photos directly from the device's camera with digital zoom.
 - **Abortable requests**: Cancel long-running classification requests via a timeout or "Cancel" button.
 - **Try Again**: Instantly resets the UI for another classification.
+- **Card Grading Queue**: Admin panel to review recent predictions against raw images in S3 and record corrections.
+- **Statistics Dashboard**: Accuracy breakdown grouped by suit and rank, with drill-down detailed prediction audits.
+- **Admin Authentication**: JWT-based login integration to protect grading and stats endpoints.
 - **Responsive UI**: Built using React and `react-bootstrap` components.
 
 ---
@@ -62,17 +65,44 @@ The application will open automatically at `http://localhost:3000`.
 ```text
 frontend/
 ├── public/                 # Static assets (HTML template, favicon, manifest)
+├── Resources/              # Static assets for documentation
+│   └── img/                # Screenshot examples of the interface
 ├── src/                    # React application source code
 │   ├── App.js              # Application shell
+│   ├── AuthHelper.js       # Admin authentication helper functions
 │   ├── CardClassifier.jsx  # Main card classification component
+│   ├── GradingDashboard.jsx# Admin grading queue component
 │   ├── InfoPanel.jsx       # Informational sidebar component
+│   ├── Login.jsx           # Admin login portal component
 │   ├── NavBar.jsx          # Header navigation bar
+│   ├── NavBarBrand.jsx     # Branding logo component
+│   ├── ReviewDetails.jsx   # Stats drill-down card review component
+│   ├── StatisticsDashboard.jsx # Accuracy visualization component
 │   ├── index.js            # React entry point
 │   ├── index.css           # Global CSS and Bootstrap imports
 │   └── App.css             # Component styling overrides
 ├── package.json            # npm package definition & scripts
 └── README.md               # This documentation file
 ```
+
+---
+
+## Interface Examples
+
+### 1. Main Card Classifier (User Upload & Camera)
+![Card Classifier Interface](Resources/img/Screenshot-2023-07-08.png)
+
+### 2. Admin Login
+![Admin Login Portal](Resources/img/Screenshot-2025-08-02.png)
+
+### 3. Card Grading Queue
+![Grading Queue Dashboard](Resources/img/card-classifier-grading-queue.png)
+
+### 4. Accuracy Statistics Dashboard
+![Statistics Dashboard](Resources/img/card-classifier-statistics-dashboard.png)
+
+### 5. Detailed Review & Audit
+![Review Details View](Resources/img/card-classifier-review-details.png)
 
 ---
 
