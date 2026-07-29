@@ -189,13 +189,17 @@ export default function CardClassifier() {
       let dataUrl;
       if (file && !cameraActive) {
         const imgBitmap = await createImageBitmap(file);
-        const tempCanvas = document.createElement('canvas');
-        tempCanvas.width = canvasRef.current.width;
-        tempCanvas.height = canvasRef.current.height;
-        const tctx = tempCanvas.getContext('2d');
-        tctx.clearRect(0, 0, tempCanvas.width, tempCanvas.height);
-        tctx.drawImage(imgBitmap, 0, 0, tempCanvas.width, tempCanvas.height);
-        dataUrl = tempCanvas.toDataURL('image/png');
+        try {
+          const tempCanvas = document.createElement('canvas');
+          tempCanvas.width = canvasRef.current.width;
+          tempCanvas.height = canvasRef.current.height;
+          const tctx = tempCanvas.getContext('2d');
+          tctx.clearRect(0, 0, tempCanvas.width, tempCanvas.height);
+          tctx.drawImage(imgBitmap, 0, 0, tempCanvas.width, tempCanvas.height);
+          dataUrl = tempCanvas.toDataURL('image/png');
+        } finally {
+          imgBitmap.close();
+        }
       } else {
         dataUrl = previewCanvasRef.current.toDataURL('image/png');
       }
